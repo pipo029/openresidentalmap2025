@@ -1,5 +1,6 @@
 # 実行ファイル
 from data_processor import DataProcessor
+from feature_engineering import FeatureEngineering
 
 if __name__ == "__main__":
     #データの前処理クラス
@@ -23,3 +24,29 @@ if __name__ == "__main__":
                                   plateau_path,
                                   output_plateau_path)
     dataProcessor.run()
+
+
+    #特徴量作成クラス
+    #特徴量のパス
+    age_group_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/国勢調査/第3表_年齢階級.csv'
+    ownertype_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/国勢調査/第7表_住宅の所有関係別一般世帯数2020小地域集計.csv'
+    year_income_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/住宅土地統計調査/第44-4表_世帯の年間収入階級.xlsx'
+    length_residence_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/国勢調査/第18表_居住期間小地域集計2020.csv'
+    small_area_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step4/小地域ポリゴン/A002005212020DDSWC15202/r2ka15202.shp'
+    city_code_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/市区町村コード.xlsx'
+    how_to_build_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/国勢調査/第8表 _住宅の建て方別一般世帯数－町丁・字等2020.csv'
+    usage_area_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step4/新潟県用途地域/A29-11_15.shp'
+    #建物データ
+    geomap = dataProcessor.target_geomap
+    plateau = dataProcessor.plateau
+
+    featureEngineering = FeatureEngineering(age_group_path,
+                                             ownertype_path,
+                                             year_income_path,
+                                             length_residence_path,
+                                             small_area_path,
+                                             city_code_path,
+                                             how_to_build_path,
+                                             usage_area_path,
+                                             geomap,
+                                             plateau)
