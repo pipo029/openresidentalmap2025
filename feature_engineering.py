@@ -3,18 +3,26 @@
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
-from features.add_KEYCODE import add_KEYCODE
-from features.age_group_ratio import age_group_ratio
-from features.per_length_residence import per_length_residence
-from features.household_income_ratios import household_income_ratios
-from features.building_type import building_type
-from features.join_usage_area import join_usage_area
+from features import (
+    add_KEYCODE,
+    age_group_ratio,
+    per_length_residence,
+    household_income_ratios,
+    building_type,
+    join_usage_area,
+    bldg_attrs,
+    bldg_type,
+
+)
+
 
 
 class FeatureEngineering:
     def __init__(self, age_group_path, ownertype_path,
                  year_income_path, length_residence_path, small_area_path,
-                 city_code_path, how_to_build_path, usage_area_path, geomap, plateau):
+                 city_code_path, how_to_build_path, usage_area_path, 
+                 geomap, plateau, crs,
+                 target_area, output_path):
         # 特徴量のパス
         self.age_group_path = age_group_path
         self.ownertype_path = ownertype_path
@@ -27,6 +35,10 @@ class FeatureEngineering:
         # 建物データ
         self.geomap = geomap
         self.plateau = plateau
+        self.crs = crs
+        # 出力パス
+        self.target_area = target_area
+        self.output_path = output_path
     
     def load_data(self):
         # 特徴量データの読み込み
@@ -94,16 +106,56 @@ class FeatureEngineering:
         self.bldg = self.bldg[~self.bldg.index.duplicated(keep='first')]
     
     def bldg_attrs(self):
-        
-
+        # 建物属性の追加(面積，周囲長，矩形度)
+        self.bldg = self.bldg_attrs(self.bldg, self.crs)
     
+    def bldg_type(self):
+        # 建物タイプのダミー変数を追加
+        self.bldg = bldg_type(self.bldg)
 
-
-    #建物データがないと結合が出来ない
     def join_usage_area(self):
         # 用途地域の結合
         self.usage_area = self.usage_area[['id', 'class', 'usage', 'geometry']]
         self.usage_area = gpd.GeoDataFrame(self.usage_area, geometry='geometry', crs='EPSG:4326')
+        self.bldg = join_usage_area(self.bldg, self.usage_area)
     
+    def clean_data(self):
+        self.bldg = self.bldg.iloc[:, 8:]
+        columns = ['00_総数', '09_1000以上']
+        self.bldg.drop(columns=columns, axis=1, inplace=True)
 
+
+    def target_variable(self):
+        # 目的変数の追加
+        self.bldg['target'] = self.bldg['usage'] == 411
+        self.bldg['target'] = self.bldg['target'].astype(int)
     
+    def save_features(self):
+        # 特徴量の保存
+        self.output_path = self.output_path.format(target_area=self.target_area)
+        self.features.to_parquet(
+                self.output_path,
+                index=False,
+                compression="brotli",
+                )
+    
+    def run(self):
+        # 特徴量エンジニアリングの実行
+        self.load_data()
+        self.add_keycode()
+        self.age_group_ratio()
+        self.per_length_residence()
+        self.household_income_ratios()
+        self.building_type()
+        self.join_small_area()
+        
+        # 建物データの処理
+        self.plateau_join_to_geomap()
+        self.bldg_attrs()
+        self.bldg_type()
+        self.join_usage_area()
+        self.clean_data()
+        self.target_variable()
+
+        # 特徴量の保存
+        self.save_features()
