@@ -4,26 +4,33 @@ from feature_engineering import FeatureEngineering
 
 if __name__ == "__main__":
     #データの前処理クラス
+    #input_data
     #基盤地図
-    area = 'hokuriku'
-    target_area = '長岡市'
-    widearea_geomap_path = '//Akiyamalab_02/Akiyamalab02/DRM/prj_データセット開発/data/raw/基盤地図_建物/bld_poligon/FG-GML-{basemap_area}-ALL-02-Z001.parquet'
-    government_polygon_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step1/行政区域レイヤ.geojson'
-    output_basemap_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/data_processor/{target_plateau_area}_basemap.parquet'
-    #plateau
-    target_plateau_area = 15202
-    plateau_path = '//Akiyamalab_02/Akiyamalab02/PLATEAU/Data_gpkg/{target_plateau_area}/{target_plateau_area}.gpkg'
-    output_plateau_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/data_processor/{target_plateau_area}_plateau.parquet'
+    # area = 'hokuriku'
+    # target_area = '長岡市'
+    # widearea_basemap_path = '//Akiyamalab_02/Akiyamalab02/DRM/prj_データセット開発/data/raw/基盤地図_建物/bld_poligon/FG-GML-{basemap_area}-ALL-02-Z001.parquet'
+    # government_polygon_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step1/行政区域レイヤ.geojson'
+    # #plateau
+    # target_plateau_area = 15202
+    # # plateau_path = '//Akiyamalab_02/Akiyamalab02/PLATEAU/Data_gpkg/{target_plateau_area}/{target_plateau_area}.gpkg'
+    # # output_plateau_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/data_processor/{target_plateau_area}_plateau.parquet'
+    # plateau_path = "G:/マイドライブ/akiyamalab/オープン住宅地図/dev/nagaoka/step2/nagaoka.gpkg"
 
-    dataProcessor = DataProcessor(area,
-                                  target_area,
-                                  target_plateau_area,
-                                  widearea_geomap_path,
-                                  government_polygon_path,
-                                  output_basemap_path,
-                                  plateau_path,
-                                  output_plateau_path)
-    dataProcessor.run()
+    # #output_data
+    # output_dir = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/data_processor/{target_plateau_area}'
+    # output_basemap_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/data_processor/{target_plateau_area}/basemap/{target_plateau_area}.parquet'
+    # output_plateau_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/data_processor/{target_plateau_area}/plateau/{target_plateau_area}.parquet'
+
+
+    # dataProcessor = DataProcessor(area,
+    #                               target_area,
+    #                               target_plateau_area,
+    #                               widearea_basemap_path,
+    #                               government_polygon_path,
+    #                               output_basemap_path,
+    #                               plateau_path,
+    #                               output_plateau_path)
+    # dataProcessor.run()
 
 
     #特徴量作成クラス
@@ -37,10 +44,14 @@ if __name__ == "__main__":
     how_to_build_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/国勢調査/第8表 _住宅の建て方別一般世帯数－町丁・字等2020.csv'
     usage_area_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step4/新潟県用途地域/A29-11_15.shp'
     #建物データ
-    geomap = dataProcessor.target_geomap
+    basemap = dataProcessor.target_basemap
     plateau = dataProcessor.plateau
+    crs = 6674
+    # 出力パス
+    target_area = 15202
+    output_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/feature_engineering/{target_area}.parquet'
 
-    featureEngineering = FeatureEngineering(age_group_path,
+    featureengineering = FeatureEngineering(age_group_path,
                                              ownertype_path,
                                              year_income_path,
                                              length_residence_path,
@@ -48,5 +59,11 @@ if __name__ == "__main__":
                                              city_code_path,
                                              how_to_build_path,
                                              usage_area_path,
-                                             geomap,
-                                             plateau)
+                                             basemap,
+                                             plateau,
+                                             crs,
+                                             target_area,
+                                             output_path)
+    
+    featureengineering.run()
+    
