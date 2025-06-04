@@ -14,16 +14,16 @@ def join_usage_area(bldg_gdf, usage_gdf, crs):
     #                                             np.where(usage_gdf['usage_area'].isin([8, 9]), 2, 
     #                                                 np.where(usage_gdf['usage_area'].isin([10, 11, 12]), 3, np.nan)))
 
-    # ワンホットエンコーディング
-    usage_gdf = pd.get_dummies(usage_gdf, columns=['usage_area'], prefix='usage_area')
-
     #用途地域のポリゴンを建物ポリゴンに空間結合
     bldg_gdf.to_crs('EPSG:4326', inplace=True)
+    usage_gdf.to_crs('EPSG:4326', inplace=True)
     bldg_gdf = gpd.sjoin(bldg_gdf, usage_gdf, how='left', predicate='within')
     bldg_gdf.drop(columns=['index_right'], inplace=True)
     bldg_gdf.to_crs(f'EPSG:{crs}', inplace=True)
 
     #用途地域の説明変数を追加
+    bldg_gdf['usage_area'].fillna(0)
+    bldg_gdf = pd.get_dummies(bldg_gdf, columns=['usage_area'])
     bldg_gdf_col_list = bldg_gdf.columns.to_list()
     #地域で不足している用途地域カラムを追加
     usage_col = ['usage_area_1.0', 'usage_area_2.0', 'usage_area_3.0', 'usage_area_4.0', 'usage_area_5.0',

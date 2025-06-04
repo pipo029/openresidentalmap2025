@@ -31,7 +31,8 @@ class FeatureEngineering:
                  poi_path, 
                  crs,
                  target_usage,
-                 output_path):
+                 output_path,
+                 smallarea_output_path ):
         # 特徴量のパス
         self.age_group_path = age_group_path
         self.ownertype_path = ownertype_path
@@ -50,6 +51,7 @@ class FeatureEngineering:
         self.target_usage = target_usage
         # 出力パス
         self.output_path = output_path
+        self.smallarea_output_path = smallarea_output_path 
     
     def load_data(self):
         print('データの読み込み開始')
@@ -96,12 +98,15 @@ class FeatureEngineering:
     def join_small_area(self):
         # 小地域ポリゴンと結合
         self.small_area = self.small_area[['KEY_CODE', 'PREF_NAME', 'CITY_NAME', 'S_NAME', 'geometry']] #小地域ポリゴンのdfのうち必要なカラムに絞る
-        dfs = [self.small_area, self.age_group, self.length_residence, self.micro_income, self.how_to_build]
+        self.geomap.to_crs('EPSG:4326', inplace=True)
+        self.small_area.to_crs('EPSG:4326', inplace=True)
+        self.geomap = gpd.sjoin(self.geomap, self.small_area, how='left', predicate='intersects')
+        self.geomap = self.geomap[~self.geomap.index.duplicated(keep='first')]
+        self.geomap.drop(columns=['index_right'], inplace=True)
+
+        dfs = [self.age_group, self.length_residence, self.micro_income, self.how_to_build]
         for i, df in enumerate(dfs):
-            if i == 0:
-                self.features = df
-            else:
-                self.features = pd.merge(self.features, df, on='KEY_CODE', how='left')
+            self.geomap= pd.merge(self.geomap, df, on='KEY_CODE', how='left')
         print('統計値特徴量の作成終了')
     
 
@@ -123,14 +128,17 @@ class FeatureEngineering:
         self.plateau.rename(columns={'id':'buildingID'}, inplace=True)
         self.plateau = self.plateau[['buildingID', 'class', 'usage', 'geometry']]
         #基盤地図にplateauデータを空間結合
+        self.geomap.to_crs('EPSG:4326', inplace=True)
         self.bldg = gpd.sjoin(self.geomap, self.plateau, how='left', predicate='contains')
         self.bldg.drop(columns=['index_right'], inplace=True)
         # インデックスの重複を削除
         self.bldg = self.bldg[~self.bldg.index.duplicated(keep='first')]
+        print(f'空間結合後の建物データのデータ数{len(self.bldg)}')
     
     def bldg_attrs(self):
         # 建物属性の追加(面積，周囲長，矩形度)
         self.bldg = bldg_attrs(self.bldg, self.crs)
+        #bldg座標系6676
     
     def bldg_type(self):
         # 建物タイプのダミー変数を追加
@@ -140,16 +148,18 @@ class FeatureEngineering:
         # 用途地域の結合
         self.usage_area = gpd.GeoDataFrame(self.usage_area, geometry='geometry', crs='EPSG:4326')
         self.bldg = join_usage_area(self.bldg, self.usage_area, self.crs)
+        #bldg座標系6676
 
     def attach_poi(self):
-        self.bldg = self.attach_poi_to_buildings(self.bldg, self.poi, self.crs)
+        self.bldg = attach_poi_to_buildings(self.bldg, self.poi, self.crs)
         print('建物特徴量の作成終了')
+        #bldg座標系6676
 
-    def smallfeature_join_bldg(self):
-        self.bldg.to_crs('EPSG:4326', inplace=True)
-        self.features.to_crs('EPSG:4326', inplace=True)
-        self.bldg = gpd.sjoin(self.bldg, self.features, how='left', predicate='within')
-        self.bldg.drop(columns=['index_right'], inplace=True)
+    # def smallfeature_join_bldg(self):
+    #     self.bldg.to_crs('EPSG:4326', inplace=True)
+    #     self.features.to_crs('EPSG:4326', inplace=True)
+    #     self.bldg = gpd.sjoin(self.bldg, self.features, how='left', predicate='within')
+    #     self.bldg.drop(columns=['index_right'], inplace=True)
     
     # def clean_data(self):
         # self.bldg = self.bldg.iloc[:, 8:]
@@ -170,7 +180,13 @@ class FeatureEngineering:
                 index=False,
                 compression="brotli",
                 )
-    
+
+        # self.features.to_parquet(
+        #         self.smallarea_output_path,
+        #         index=False,
+        #         compression="brotli",
+        #         )
+
     def run(self):
         # 特徴量エンジニアリングの実行
         self.load_data()
@@ -187,7 +203,8 @@ class FeatureEngineering:
         self.bldg_type()
         self.join_usage_area()
         # self.clean_data()
-        self.smallfeature_join_bldg()
+        self.attach_poi()
+        # self.smallfeature_join_bldg()
         self.target_variable()
 
         # 特徴量の保存

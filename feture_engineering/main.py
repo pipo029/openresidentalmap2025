@@ -16,10 +16,13 @@ if __name__ == "__main__":
     target_area = 15202
     basemap_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/data_processor/{target_area}/basemap/{target_area}.parquet'
     plateau_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/data_processor/{target_area}/plateau/{target_area}.parquet'
+    # basemap_path = "G:/マイドライブ/akiyamalab/オープン住宅地図/dev/nagaoka/step1/nagaoka_basemap.parquet"
+    # plateau_path = "G:/マイドライブ/akiyamalab/オープン住宅地図/dev/nagaoka/step2/nagaoka_plateau.parquet"
     crs = 6676
     target_usage = 411
     # 出力パス
     output_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/feature_engineering/{target_area}.parquet'
+    smallarea_output_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/feature_engineering/15202_smallfeature.parquet'
 
     featureengineering = FeatureEngineering(age_group_path,
                                              ownertype_path,
@@ -35,6 +38,7 @@ if __name__ == "__main__":
                                              poi_path,
                                              crs,
                                              target_usage,
-                                             output_path)
+                                             output_path,
+                                             smallarea_output_path)
     
     featureengineering.run()

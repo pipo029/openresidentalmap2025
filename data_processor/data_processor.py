@@ -54,6 +54,10 @@ class DataProcessor:
         self.target_basemap = self.target_basemap[['type', 'geometry']]
         self.target_basemap.reset_index(drop=True, inplace=True)
         self.target_basemap = gpd.GeoDataFrame(self.target_basemap, geometry='geometry', crs='EPSG:4326')
+        # 無効なジオメトリを高速に修正（ベクトル化）
+        invalid_mask = ~self.target_basemap.is_valid
+        if invalid_mask.any():
+            self.target_basemap.loc[invalid_mask, 'geometry'] = self.target_basemap.loc[invalid_mask, 'geometry'].make_valid()
         print('基盤地図データの前処理終了')
 
     def extract_numeric_part(self, value):
