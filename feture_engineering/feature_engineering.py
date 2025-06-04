@@ -3,26 +3,35 @@
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
-from features import (
-    add_KEYCODE,
-    age_group_ratio,
-    per_length_residence,
-    household_income_ratios,
-    building_type,
-    join_usage_area,
-    bldg_attrs,
-    bldg_type,
-
-)
-
+from features.add_KEYCODE import add_KEYCODE
+from features.age_group_ratio import age_group_ratio
+from features.per_length_residence import per_length_residence
+from features.household_income_ratios import household_income_ratios
+from features.building_type import building_type
+from features.join_usage_area import join_usage_area
+from features.bldg_attrs import bldg_attrs
+from features.bldg_type import bldg_type
+from features.poi import find_nearby_pois
+from features.poi import attach_poi_to_buildings
 
 
 class FeatureEngineering:
-    def __init__(self, age_group_path, ownertype_path,
-                 year_income_path, length_residence_path, small_area_path,
-                 city_code_path, how_to_build_path, usage_area_path, 
-                 geomap, plateau, crs,
-                 target_area, output_path):
+    def __init__(self, 
+                 age_group_path, 
+                 ownertype_path,
+                 year_income_path, 
+                 length_residence_path, 
+                 small_area_path,
+                 city_code_path, 
+                 how_to_build_path, 
+                 usage_area_path, 
+                 target_area,
+                 geomap_path, 
+                 plateau_path, 
+                 poi_path, 
+                 crs,
+                 target_usage,
+                 output_path):
         # 特徴量のパス
         self.age_group_path = age_group_path
         self.ownertype_path = ownertype_path
@@ -33,31 +42,41 @@ class FeatureEngineering:
         self.how_to_build_path = how_to_build_path
         self.usage_area_path = usage_area_path
         # 建物データ
-        self.geomap = geomap
-        self.plateau = plateau
-        self.crs = crs
-        # 出力パス
         self.target_area = target_area
+        self.geomap_path = geomap_path
+        self.plateau_path = plateau_path
+        self.poi_path = poi_path
+        self.crs = crs
+        self.target_usage = target_usage
+        # 出力パス
         self.output_path = output_path
     
     def load_data(self):
+        print('データの読み込み開始')
         # 特徴量データの読み込み
-        self.age_group = pd.read_csv(self.age_group_path)
-        self.ownertype = pd.read_csv(self.ownertype_path)
+        self.age_group = pd.read_csv(self.age_group_path, encoding='cp932')
+        self.ownertype = pd.read_csv(self.ownertype_path, encoding='cp932')
         self.year_income = pd.read_excel(self.year_income_path)
-        self.length_residence = pd.read_csv(self.length_residence_path)
+        self.length_residence = pd.read_csv(self.length_residence_path, encoding='cp932')
         self.small_area = gpd.read_file(self.small_area_path)
         self.city_code = pd.read_excel(self.city_code_path)
-        self.how_to_build = pd.read_csv(self.how_to_build_path)
+        self.how_to_build = pd.read_csv(self.how_to_build_path, encoding='cp932')
         self.usage_area = gpd.read_file(self.usage_area_path, encoding='shift_jis')
-        self.poi_path = 
+        self.poi = gpd.read_parquet(self.poi_path)
 
+        #建物データの読み込み
+        self.geomap_path = self.geomap_path.format(target_area=self.target_area)
+        self.geomap = gpd.read_parquet(self.geomap_path)
+        self.plateau_path = self.plateau_path.format(target_area=self.target_area)
+        self.plateau = gpd.read_parquet(self.plateau_path)
+        print('データの読み込み終了')
     
     def add_keycode(self):
+        print('統計値特徴量の作成開始')
         self.age_group = add_KEYCODE(self.age_group)
         self.length_residence = add_KEYCODE(self.length_residence)
         self.ownertype = add_KEYCODE(self.ownertype)
-    
+
     def age_group_ratio(self):
         # 年齢層の割合を計算
         self.age_group = age_group_ratio(self.age_group)
@@ -83,31 +102,35 @@ class FeatureEngineering:
                 self.features = df
             else:
                 self.features = pd.merge(self.features, df, on='KEY_CODE', how='left')
+        print('統計値特徴量の作成終了')
     
 
     # 建物データの処理
     
     def plateau_join_to_geomap(self):
+        print('建物特徴量の作成開始')
         # plateauデータと基盤地図の結合
         # 各ポリゴンの重心を求める
+        self.plateau.to_crs('EPSG:6676', inplace=True)
         self.plateau['centroid'] = self.plateau['geometry'].centroid     
         # 空のジオメトリに対処する
         self.plateau['geometry'] = self.plateau['centroid'].apply(lambda x: Point(x.x, x.y) if not x.is_empty else Point())   
         # 重心カラムを削除する
         self.plateau = self.plateau.drop(columns=['centroid'])
+        self.plateau.to_crs('EPSG:4326', inplace=True)
 
         # 基盤地図とplateauデータの結合
         self.plateau.rename(columns={'id':'buildingID'}, inplace=True)
-        self.plateau = self.plateau[['class', 'usage', 'buildingID', 'geometry']]
+        self.plateau = self.plateau[['buildingID', 'class', 'usage', 'geometry']]
         #基盤地図にplateauデータを空間結合
-        self.bldg = gpd.sjoin(self.geomap, self.plateau, how='left', op='contains', )
+        self.bldg = gpd.sjoin(self.geomap, self.plateau, how='left', predicate='contains')
         self.bldg.drop(columns=['index_right'], inplace=True)
         # インデックスの重複を削除
         self.bldg = self.bldg[~self.bldg.index.duplicated(keep='first')]
     
     def bldg_attrs(self):
         # 建物属性の追加(面積，周囲長，矩形度)
-        self.bldg = self.bldg_attrs(self.bldg, self.crs)
+        self.bldg = bldg_attrs(self.bldg, self.crs)
     
     def bldg_type(self):
         # 建物タイプのダミー変数を追加
@@ -115,25 +138,34 @@ class FeatureEngineering:
 
     def join_usage_area(self):
         # 用途地域の結合
-        self.usage_area = self.usage_area[['id', 'class', 'usage', 'geometry']]
         self.usage_area = gpd.GeoDataFrame(self.usage_area, geometry='geometry', crs='EPSG:4326')
-        self.bldg = join_usage_area(self.bldg, self.usage_area)
+        self.bldg = join_usage_area(self.bldg, self.usage_area, self.crs)
+
+    def attach_poi(self):
+        self.bldg = self.attach_poi_to_buildings(self.bldg, self.poi, self.crs)
+        print('建物特徴量の作成終了')
+
+    def smallfeature_join_bldg(self):
+        self.bldg.to_crs('EPSG:4326', inplace=True)
+        self.features.to_crs('EPSG:4326', inplace=True)
+        self.bldg = gpd.sjoin(self.bldg, self.features, how='left', predicate='within')
+        self.bldg.drop(columns=['index_right'], inplace=True)
     
-    def clean_data(self):
-        self.bldg = self.bldg.iloc[:, 8:]
-        columns = ['00_総数', '09_1000以上']
-        self.bldg.drop(columns=columns, axis=1, inplace=True)
+    # def clean_data(self):
+        # self.bldg = self.bldg.iloc[:, 8:]
+        # columns = ['00_総数', '09_1000以上']
+        # self.bldg.drop(columns=columns, axis=1, inplace=True)
 
 
     def target_variable(self):
         # 目的変数の追加
-        self.bldg['target'] = self.bldg['usage'] == 411
+        self.bldg['target'] = self.bldg['usage'] == self.target_usage
         self.bldg['target'] = self.bldg['target'].astype(int)
     
     def save_features(self):
         # 特徴量の保存
         self.output_path = self.output_path.format(target_area=self.target_area)
-        self.features.to_parquet(
+        self.bldg.to_parquet(
                 self.output_path,
                 index=False,
                 compression="brotli",
@@ -154,7 +186,8 @@ class FeatureEngineering:
         self.bldg_attrs()
         self.bldg_type()
         self.join_usage_area()
-        self.clean_data()
+        # self.clean_data()
+        self.smallfeature_join_bldg()
         self.target_variable()
 
         # 特徴量の保存

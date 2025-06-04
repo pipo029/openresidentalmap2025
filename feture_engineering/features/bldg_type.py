@@ -3,6 +3,7 @@
 import pandas as pd
 
 def bldg_type(gdf):
+    pd.set_option('future.no_silent_downcasting', True)
     #普通か堅ろう住宅の説明変数を追加
     gdf = pd.get_dummies(gdf, columns=['type'])
     col = ['type_堅ろう建物', 'type_堅ろう無壁舎', 'type_普通建物', 'type_普通無壁舎']

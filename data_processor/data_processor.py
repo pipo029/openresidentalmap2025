@@ -6,11 +6,12 @@ import geopandas as gpd
 import re
 import numpy as np
 import os
+from shapely import force_2d
 
 class DataProcessor:
     def __init__(self, basemap_area, target_basemap_area, target_plateau_area, 
-                 widearea_basemap_path, government_polygon_path, output_basemap_path, 
-                 plateau_path, output_plateau_path, output_dir):
+                 widearea_basemap_path, government_polygon_path, 
+                 plateau_path, output_dir, output_basemap_path, output_plateau_path):
         #基盤地図
         self.basemap_area = basemap_area
         self.target_basemap_area = target_basemap_area
@@ -35,8 +36,9 @@ class DataProcessor:
         #行政ポリゴンの読み込み
         self.government_polygon = gpd.read_file(self.government_polygon_path)
         #plateauデータの読み込み
-        # self.plateau_path = self.plateau_path.format(target_plateau_area=self.target_plateau_area)
-        self.plateau = gpd.read_file(self.plateau_path)
+        self.plateau_path = self.plateau_path.format(target_plateau_area=self.target_plateau_area)
+        self.plateau = gpd.read_parquet(self.plateau_path)
+
         print('データの読み込み終了')
 
     #基盤地図データの前処理
@@ -66,13 +68,25 @@ class DataProcessor:
         self.plateau = self.plateau[['id', 'class', 'usage', 'geometry']]
         # usageカラムを数値部分のみで置き換え
         self.plateau['usage'] = self.plateau['usage'].apply(self.extract_numeric_part)
+        self.plateau['class'] = pd.to_numeric(self.plateau['class'], errors='coerce')  # 変換できない値はNaNにする
+        self.plateau['usage'] = pd.to_numeric(self.plateau['usage'], errors='coerce')
+        # 無効なジオメトリを高速に修正（ベクトル化）
+        invalid_mask = ~self.plateau.is_valid
+        if invalid_mask.any():
+            self.plateau.loc[invalid_mask, 'geometry'] = self.plateau.loc[invalid_mask, 'geometry'].make_valid()
+        # POLYGON Zを2次元にする（Z値を除去）
+        self.plateau['geometry'] = self.plateau['geometry'].apply(force_2d)
+
 
         self.plateau.replace({None: np.nan}, inplace=True)
         print('plateauデータの前処理終了')
 
     def output_file(self):
         print('データの保存開始')
-        os.makedirs(self.output_dir, exist_ok=True)  # ディレクトリを作成（存在してもエラーにならない）
+        #基盤地図の出力
+        self.output_dir_base = self.output_dir.format(target_plateau_area=self.target_plateau_area)
+        self.output_dir_base = os.path.join(self.output_dir_base, 'basemap')
+        os.makedirs(self.output_dir_base, exist_ok=True)  # ディレクトリを作成（存在してもエラーにならない）
         #出力先のパスを設定
         self.output_basemap_path = self.output_basemap_path.format(target_plateau_area=self.target_plateau_area)
         self.target_basemap.to_parquet(
@@ -80,8 +94,14 @@ class DataProcessor:
                                 index=False,
                                 compression="brotli",
         )
+
+        #plateauの出力
+        self.output_dir_pla = self.output_dir.format(target_plateau_area=self.target_plateau_area)
+        self.output_dir_pla = os.path.join(self.output_dir_pla, 'plateau')
+        os.makedirs(self.output_dir_pla, exist_ok=True)  # ディレクトリを作成（存在してもエラーにならない）
+        #出力先のパスを設定
         self.output_plateau_path = self.output_plateau_path.format(target_plateau_area=self.target_plateau_area)
-        self.target_basemap.to_parquet(
+        self.plateau.to_parquet(
                                 self.output_plateau_path,
                                 index=False,
                                 compression="brotli",

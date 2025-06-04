@@ -5,13 +5,14 @@ import pandas as pd
 def household_income_ratios(year_income_df, ownertype_df):
     # --- 市区町村コードの作成 (City Code Creation) ---
     city_codes = year_income_df['地域区分－全国・都道府県・市区町村'].str[:5].to_list()
-    city_name = year_income_df['地域区分－全国・都道府県－市区町村'].str[6:].to_list()
+    city_name = year_income_df['地域区分－全国・都道府県・市区町村'].str[6:].to_list()
 
     city = pd.DataFrame()
     city['city_code'] = city_codes
     city['city_name'] = city_name
 
     city = city.drop_duplicates(subset=['city_code'], keep='first')
+    pd.set_option('future.no_silent_downcasting', True)
     city['city_name'] = city['city_name'].str.replace('　', '_')
     city = city.reset_index(drop=True)
 
