@@ -36,11 +36,12 @@ class Predict:
         self.later_join = self.bldg[['geometry', 'KEY_CODE']]
         need_col = ['年少人口', '生産年齢人口', '老年人口', 
                     '出生時から', '1年未満', '1年以上5年未満', '5年以上10年未満',
-                    '10年以上20年未満', '20年以上', '居住期間「不詳」', '01_500万円未満', '07_500～1000万円未満',
-                    '一戸建', '長屋建', '共同住宅', 
-
-                    'area', 
-                    'type_堅ろう建物', 'type_堅ろう無壁舎', 'type_普通建物', 'type_普通無壁舎']
+                    '10年以上20年未満', '20年以上', '01_500万円未満', '07_500～1000万円未満','09_1000以上',
+                    '一戸建', '長屋建', '共同住宅',
+                    'area', 'rectangularity', 'convexity',
+                    'moment_of_inertia', 'num_corners', 'anisotropy', 'longest_axis',
+                    'elongation', 'orientation', 
+                    'target']
         if 'type_堅ろう無壁舎' not in self.bldg.columns:
             self.bldg['type_堅ろう無壁舎'] = 0
         

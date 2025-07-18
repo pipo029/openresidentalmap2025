@@ -45,7 +45,8 @@ class Train_model:
                     '一戸建', '長屋建', '共同住宅', 
                     '1_amenity', '1_shop', '1_tourism',
                     '3_amenity', '3_shop', '3_tourism', '5_amenity', '5_shop', '5_tourism',
-                    'area', 'perimeter', 'rectangle', 
+                    'area', 'rectangularity', 'convexity', 'moment_of_inertia', 'num_corners', 
+                    'anisotropy', 'longest_axis', 'elongation', 'orientation', 
                     'type_堅ろう建物', 'type_堅ろう無壁舎', 'type_普通建物', 'type_普通無壁舎',
                     'target']
         

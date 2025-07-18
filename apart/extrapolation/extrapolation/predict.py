@@ -92,8 +92,8 @@ class Predict:
                 apart_list.extend(micro_area.index)  # extendでリストに追加
 
         #self.bldgに推定戸建てのフラグを作成
-        self.bldg['presumed_detached'] = 0
-        self.bldg.loc[apart_list, 'presumed_detached'] = 1
+        self.bldg['presumed_apart'] = 0
+        self.bldg.loc[apart_list, 'presumed_apart'] = 1
 
     
     def save_data(self):

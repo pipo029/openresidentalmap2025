@@ -52,6 +52,15 @@ class DataProcessor:
         if invalid_mask.any():
             self.target_basemap.loc[invalid_mask, 'geometry'] = self.target_basemap.loc[invalid_mask, 'geometry'].make_valid()
         print('基盤地図データの前処理終了')
+    
+    # bldg_idの追加
+    def add_bldg_id(self):
+        # 1. 1から始まる連番を振る (gdf.index + 1)
+        sequence = self.target_basemap.index + 1
+        # 2. 連番を7桁の文字列にし、先頭を0で埋める (zfill)
+        sequence_str_7digit = pd.Series(sequence).astype(str).str.zfill(7)
+        # 3. 市区町村コードと7桁の連番を結合してIDを作成
+        self.target_basemap['bldg_id'] = self.target_area + sequence_str_7digit
 
     def output_file(self):
         print('データの保存開始')
@@ -71,4 +80,5 @@ class DataProcessor:
     def run(self):
         self.load_data()
         self.extract_target_basemap_bldg()
+        self.add_bldg_id()
         self.output_file()

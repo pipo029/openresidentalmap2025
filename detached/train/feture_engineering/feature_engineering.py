@@ -22,7 +22,6 @@ class FeatureEngineering:
                  year_income_path, 
                  length_residence_path, 
                  small_area_path,
-                 city_code_path, 
                  how_to_build_path, 
                  usage_area_path, 
                  target_area,
@@ -39,7 +38,6 @@ class FeatureEngineering:
         self.year_income_path = year_income_path
         self.length_residence_path = length_residence_path
         self.small_area_path = small_area_path
-        self.city_code_path = city_code_path
         self.how_to_build_path = how_to_build_path
         self.usage_area_path = usage_area_path
         # 建物データ
@@ -61,7 +59,6 @@ class FeatureEngineering:
         self.year_income = pd.read_excel(self.year_income_path)
         self.length_residence = pd.read_csv(self.length_residence_path, encoding='cp932')
         self.small_area = gpd.read_file(self.small_area_path)
-        self.city_code = pd.read_excel(self.city_code_path)
         self.how_to_build = pd.read_csv(self.how_to_build_path, encoding='cp932')
         self.usage_area = gpd.read_file(self.usage_area_path, encoding='shift_jis')
         self.poi = gpd.read_parquet(self.poi_path)
@@ -89,7 +86,7 @@ class FeatureEngineering:
 
     def household_income_ratios(self):
         # 収入階級別人口割合を計算
-        self.micro_income = household_income_ratios(self.year_income, self.ownertype)
+        self.micro_income = household_income_ratios(self.year_income, self.ownertype, self.target_area)
     
     def building_type(self):
         # 建て方別世帯数を計算
@@ -197,7 +194,7 @@ class FeatureEngineering:
         self.plateau_join_to_geomap()
         self.bldg_attrs()
         self.bldg_type()
-        self.join_usage_area()
+        # self.join_usage_area()
         # self.clean_data()
         self.attach_poi()
         # self.smallfeature_join_bldg()
