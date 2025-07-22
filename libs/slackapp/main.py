@@ -5,15 +5,16 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-load_dotenv()
+env_path = "G:/マイドライブ/akiyamalab/オープン住宅地図/code_2025/libs/slackapp/.env"
+load_dotenv(dotenv_path=env_path)
 
 
-def notify(channel="notice"):
+def notify(channel="U044WBNG96U"):
     def _notify(func):
         @functools.wraps(func)
         def _wrapper(*args, **kwargs):
             start_time = datetime.now()
-            text = f'\nfunction: {func.__name__}\nstart at {start_time:%Y/%m/%d %H:%M:%S}\nelapsed '
+            text = f'/nfunction: {func.__name__}/nstart at {start_time:%Y/%m/%d %H:%M:%S}/nelapsed '
 
             try:
                 result = func(*args, **kwargs)
@@ -34,8 +35,12 @@ def notify(channel="notice"):
     return _notify
 
 
-def send_slack_message(text="Hello from slackapp! :tada:", channel="random"):
-    slack_token = os.environ["SLACK_API_TOKEN"]
+def send_slack_message(text="Hello from slackapp! :tada:", channel="U044WBNG96U"):
+    slack_token = os.getenv("SLACK_API_TOKEN")
+    if not slack_token:
+        print("エラー: SLACK_API_TOKENが.envファイルから読み込めていません。")
+        return # 処理を中断
+
     client = WebClient(token=slack_token)
 
     try:
@@ -45,8 +50,9 @@ def send_slack_message(text="Hello from slackapp! :tada:", channel="random"):
         )
 
     except SlackApiError as e:
-        # You will get a SlackApiError if "ok" is False
-        assert e.response["error"]
+        # "ok"がFalseの場合にSlackApiErrorが発生する
+        # エラー内容を詳しく表示する
+        print(f"Slack APIエラーが発生しました: {e.response['error']}")
 
 
 def format_timedelta(timedelta):

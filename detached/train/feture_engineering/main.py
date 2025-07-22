@@ -7,12 +7,13 @@ if __name__ == "__main__":
     ownertype_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/国勢調査/第7表_住宅の所有関係別一般世帯数2020小地域集計.csv'
     year_income_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/住宅土地統計調査/第44-4表_世帯の年間収入階級.xlsx'
     length_residence_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/国勢調査/第18表_居住期間小地域集計2020.csv'
-    small_area_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step4/小地域ポリゴン/A002005212020DDSWC15202/r2ka15202.shp'
+    small_area_path = "G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/feture_engineering/census/15/A002005212020DDSWC15/r2ka15.shp"
     how_to_build_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step3/国勢調査/第8表 _住宅の建て方別一般世帯数－町丁・字等2020.csv'
     usage_area_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/code_data/EDA/step4/新潟県用途地域/A29-11_15.shp'
-    poi_path = '//Akiyamalab_02/Akiyamalab02/科研費B/B_Building_Type_Clasification/data/raw/polygon/poi/15/15202.parquet'
+    poi_path = '//Akiyamalab_02/Akiyamalab02/科研費B/B_Building_Type_Clasification/data/raw/polygon/poi/15/15.parquet'
     #建物データ
-    target_area = 15202
+    target_area = 15100
+    extrapolation_area = 15107
     basemap_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/train/data_processor/{target_area}/basemap/{target_area}.parquet'
     plateau_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/train/data_processor/{target_area}/plateau/{target_area}.parquet'
     # basemap_path = "G:/マイドライブ/akiyamalab/オープン住宅地図/dev/nagaoka/step1/nagaoka_basemap.parquet"
@@ -22,6 +23,8 @@ if __name__ == "__main__":
     # 出力パス
     output_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/train/feature_engineering/detached/{target_area}.parquet'
     smallarea_output_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/train/feature_engineering/detached/15202_smallfeature.parquet'
+    exp_data_output_dir_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/extrapolation/feature_engineering/detached/{extrapolation_area}/'
+    exp_data_output_path = 'G:/マイドライブ/akiyamalab/オープン住宅地図/dev_2025/extrapolation/feature_engineering/detached/{extrapolation_area}/{extrapolation_area}.parquet'
 
     featureengineering = FeatureEngineering(age_group_path,
                                              ownertype_path,
@@ -31,12 +34,15 @@ if __name__ == "__main__":
                                              how_to_build_path,
                                              usage_area_path,
                                              target_area,
+                                             extrapolation_area,
                                              basemap_path,
                                              plateau_path,
                                              poi_path,
                                              crs,
                                              target_usage,
                                              output_path,
-                                             smallarea_output_path)
+                                             smallarea_output_path,
+                                             exp_data_output_dir_path,
+                                             exp_data_output_path)
     
     featureengineering.run()

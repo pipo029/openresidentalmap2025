@@ -153,7 +153,7 @@ class FeatureEngineering:
         # 特定の用途地域の建物を除外する
         self.geomap = exclusion_usage_area(self.geomap, self.usage_area, self.crs)
 
-    @slackapp.notify
+    @slackapp.notify()
     def save_features(self):
         # 特徴量の保存
         self.output_dir_path = str(self.output_dir_path).format(target_area=self.target_area)

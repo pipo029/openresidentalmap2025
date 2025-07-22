@@ -47,7 +47,7 @@ class DataProcessor:
     def extract_target_basemap_bldg(self):
         print('基盤地図データの前処理開始')
         #基盤地図を対象地域のみに絞る
-        self.target_polygon = self.government_polygon[self.government_polygon['SIKUCHOSON'] == self.target_basemap_area]
+        self.target_polygon = self.government_polygon[self.government_polygon['SEIREI'] == self.target_basemap_area]
         self.widearea_basemap.to_crs('EPSG:4326', inplace=True)
         self.target_polygon.to_crs('EPSG:4326', inplace=True)
         self.target_basemap = gpd.sjoin(self.widearea_basemap, self.target_polygon, predicate="within")

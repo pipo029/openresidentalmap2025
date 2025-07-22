@@ -12,7 +12,7 @@ def household_income_ratios(year_income_df, ownertype_df, target_area):
     city['city_name'] = city_name
     city = city[city['city_code'] == f'{target_area}'] #target_areaのきーこどが歩かないかで条件分岐　ない場合は県の総数から各市町村の値を引き代表値を特徴量として扱う
 
-    # 住宅土地統計調査にデータがある場合
+    # 住宅土地統計調査にデータがない場合
     if city.empty:
         pref_code = target_area[:2]
         year_income_df['普通世帯数(世帯)'].replace('-', 0, inplace=True)
@@ -205,7 +205,7 @@ def household_income_ratios(year_income_df, ownertype_df, target_area):
             for category in total_population:
                 income_aggregation[category].append(total_population[category])
 
-    # 住宅土地統計調査にデータがない場合
+    # 住宅土地統計調査にデータがある場合
     else:
         city = city.drop_duplicates(subset=['city_code'], keep='first')
         pd.set_option('future.no_silent_downcasting', True)
@@ -321,7 +321,14 @@ def household_income_ratios(year_income_df, ownertype_df, target_area):
         micro_income = pd.DataFrame()
 
         for index, micro_ownertype in ownertype_processed.iterrows():
-            code = micro_ownertype['市区町村コード']
+            # 政令指定都市は住調の市区町村コードが1つのみだが，国勢調査は区ごとに分けられているため，政令指定都市のみ市区町村コードを指定する．
+            if micro_ownertype['KEY_CODE'][2] == '1':
+                code = micro_ownertype['市区町村コード'][:3] + '00'
+            
+            else:
+                code = micro_ownertype['市区町村コード']
+
+
             print(f'市区町村コード：{code}の処理を実行中')
             tmp_major_city_income = major_city_income[major_city_income['city_code'] == code]
 

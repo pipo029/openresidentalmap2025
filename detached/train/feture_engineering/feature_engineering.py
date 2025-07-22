@@ -13,7 +13,8 @@ from features.bldg_attrs import bldg_attrs
 from features.bldg_type import bldg_type
 from features.poi import find_nearby_pois
 from features.poi import attach_poi_to_buildings
-
+import os
+import slackapp
 
 class FeatureEngineering:
     def __init__(self, 
@@ -25,13 +26,16 @@ class FeatureEngineering:
                  how_to_build_path, 
                  usage_area_path, 
                  target_area,
+                 extrapolation_area,
                  geomap_path, 
                  plateau_path, 
                  poi_path, 
                  crs,
                  target_usage,
                  output_path,
-                 smallarea_output_path ):
+                 smallarea_output_path,
+                 exp_data_output_dir_path,
+                 exp_data_output_path ):
         # 特徴量のパス
         self.age_group_path = age_group_path
         self.ownertype_path = ownertype_path
@@ -47,9 +51,13 @@ class FeatureEngineering:
         self.poi_path = poi_path
         self.crs = crs
         self.target_usage = target_usage
+        self.extrapolation_area = extrapolation_area
+        self.extrapolation_data = None
         # 出力パス
         self.output_path = output_path
         self.smallarea_output_path = smallarea_output_path 
+        self.exp_data_output_dir_path = exp_data_output_dir_path
+        self.exp_data_output_path = exp_data_output_path
     
     def load_data(self):
         print('データの読み込み開始')
@@ -69,6 +77,7 @@ class FeatureEngineering:
         self.plateau_path = self.plateau_path.format(target_area=self.target_area)
         self.plateau = gpd.read_parquet(self.plateau_path)
         print('データの読み込み終了')
+
     
     def add_keycode(self):
         print('統計値特徴量の作成開始')
@@ -164,12 +173,25 @@ class FeatureEngineering:
         # columns = ['00_総数', '09_1000以上']
         # self.bldg.drop(columns=columns, axis=1, inplace=True)
 
-    
+    def data_splitting_for_extrapolation(self):
+        self.extrapolation_data = self.bldg[self.bldg['KEY_CODE'].astype(str).str.startswith(f'{self.extrapolation_area}')]
+        self.bldg = self.bldg[~self.bldg['KEY_CODE'].astype(str).str.startswith(f'{self.extrapolation_area}')]
+        
+        
     def save_features(self):
         # 特徴量の保存
         self.output_path = self.output_path.format(target_area=self.target_area)
         self.bldg.to_parquet(
                 self.output_path,
+                index=False,
+                compression="brotli",
+                )
+        
+        self.exp_data_output_dir_path = str(self.exp_data_output_dir_path).format(extrapolation_area=self.extrapolation_area)
+        self.exp_data_output_path = str(self.exp_data_output_path).format(extrapolation_area=self.extrapolation_area)
+        os.makedirs(self.exp_data_output_dir_path, exist_ok=True)
+        self.extrapolation_data.to_parquet(
+                self.exp_data_output_path,
                 index=False,
                 compression="brotli",
                 )
@@ -180,6 +202,7 @@ class FeatureEngineering:
         #         compression="brotli",
         #         )
 
+    @slackapp.notify()
     def run(self):
         # 特徴量エンジニアリングの実行
         self.load_data()
@@ -197,6 +220,7 @@ class FeatureEngineering:
         # self.join_usage_area()
         # self.clean_data()
         self.attach_poi()
+        self.data_splitting_for_extrapolation()
         # self.smallfeature_join_bldg()
 
         # 特徴量の保存
