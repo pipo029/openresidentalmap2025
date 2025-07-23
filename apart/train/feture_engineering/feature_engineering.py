@@ -1,4 +1,4 @@
-#特徴量の作成
+ #特徴量の作成
 
 import pandas as pd
 import geopandas as gpd
